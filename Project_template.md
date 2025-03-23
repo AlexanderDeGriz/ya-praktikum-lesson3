@@ -18,67 +18,129 @@
 
 **Управление отоплением:**
 
-- Пользователи могут…
-- Система поддерживает…
-- …
+- Пользователи могут удаленно включать/выключать отопление.
+- Пользователи могут установить целевую температуру отопления в доме.
+- Специалист по подключению может установить датчики и подключить систему отопления к Системе
+- Система поддерживает управление отоплением в доме на основе установленной целевой температуры и показаний датчиков мониторинга.
 
 **Мониторинг температуры:**
 
-- Пользователи могут…
-- Система поддерживает…
-- …
+- Пользователи могут просматривать текущую температуру через веб-интерфейс
+- Система поддерживает опрос датчиков и сохранение их состояния в БД.
+
 
 ### 2. Анализ архитектуры монолитного приложения
 
 Перечислите здесь основные особенности текущего приложения: какой язык программирования используется, какая база данных, как организовано взаимодействие между компонентами и так далее.
 
+Front:
+spring-boot-starter-web
+
+Back:
+
+Язык программирования: Java 17
+База данных: PostgreSQL 15.5.20
+Архитектура: Монолитная, все компоненты системы (обработка запросов, бизнес-логика, работа с данными) находятся в рамках одного приложения.
+Взаимодействие: Синхронное, запросы обрабатываются последовательно.
+Масштабируемость: Ограничена, так как монолит сложно масштабировать по частям.Для разворачивания используется k8s. Autoscaling отключен
+Развёртывание: Требует остановки всего приложения. Параметр Replicas выставлен в 1.
+Сборка при помощи Maven >=3.8.1 && <4.0.0
+В проекте используется SLF4J для логирования.
+
 ### 3. Определение доменов и границы контекстов
 
 Опишите здесь домены, которые вы выделили.
 
+3.1. Домен "Мониторинг температуры"
+
+контекст: публикация значения датчиков
+контекст: передача текущих значений датчиков температуры в домен "Управление отоплением"
+
+поддомен отслеживания состояния датчиков
+поддомен отчётности и аналитики
+
+сущности: датчик;
+объекты-значения: измерение датчика на дату;
+агрегаты: -;
+репозитории: репозиторий измерений датчиков;
+сервисы: 
+  сервис отображения текущего значения датчиков; 
+  сервис отображения истории значения датчиков;
+  сервис подключения датчика;
+
+3.2. Домен "Управление уcтройствами"
+
+контекст: управление отоплением со стороны пользователя 
+контекст: поддержка целевой температуры на основе значений датчиков
+
+сущности: подключенные устройства; действия пользователя; сценарии работы устройства;
+объекты-значения: состояние системы отопления (вкл/выкл); целевая температура;
+агрегаты: -;
+репозитории: репозиторий действий пользователя над системой;
+сервисы: сервис установки целевой температуры;  сервис включения/отключения системы отопления.
+
 ### **4. Проблемы монолитного решения**
 
-- …
-- …
-- …
+- высокий риск ошибок. При добавлении новых типов датчиков и новой модели подключения, можно сломать старую функциональность. И при дальнейшем росте системы - разработчики будут "толкаться" (доработки единого кода, риск ошибок) при увеличении функциональности. 
+- длительные циклы разработки - релизить нужно будет всю систему целиком, что потребует слаженной работы по новым фичам/доменам
+- остановка при раскатке монолита - систему надо останавливать целиком при раскатке новой версии монолита, при этом требования к простою системы могут быть критичными (в зависимости от реализации функцией управления температурой).
+- трудно масштабировать отдельные компоненты. Нагрузка со стороны одного нового типа датчика может привести к необходимости масштабирования всего монолита, что неэффективно по ресурсам. 
 
-Если вы считаете, что текущее решение не вызывает проблем, аргументируйте свою позицию.
 
 ### 5. Визуализация контекста системы — диаграмма С4
 
-Добавьте сюда диаграмму контекста в модели C4.
-
-Чтобы добавить ссылку в файл Readme.md, нужно использовать синтаксис Markdown. Это делают так:
-
 ```markdown
-[Текст ссылки](URL)
+[Диаграмма контекста в модели C4](https://www.plantuml.com/plantuml/png/ZPFFRjD04CRlVegbfoALvCA9Kr500ecYgAZYM6sJLMh9zbhsHfHRcuWM59HAY3i2Ni0gc2HDchx2x1lnZTUkMYT5NBpUsTdVVFDdjrCZ4zCF0y_u9b3YhKp25xgVgfQEZ3eoufalUuaCFS_eM1Wj3hGnEXHTFr4Tu-l8ynxuKIVeTrK_2SIXCN7wfDbCvBj6ppU7_GEWaWwp8jFewB2vwtTaqjMlVHMheDbw_AWToCZixRngXZ8rAe5flwN3M4Ty8sPbNbibgOus6RKbDlQmR62bRxIakVrC4wmNbDa1vRmNzeIczgJOBkn8q0_yNEDaH3D1N-6ys7XOCMKtz2F0dlBgfoQHHZlwTzp9xIbDAQEv0mgObiM7VjCbY6Dx1lOLJiV_5_NDU-GORjvKsUqHxiRYChF7Y3l7fJ-EJ_cMYpj1ffprEM9_mbakx92kuPxXWCq3582MaB7awDLjMWYQ2bh0YZsVSeJ2sIdcP9a2qz0Uss43Oakr-y-FpAQCVQvI-wL0wknr1kmb5xuG_0NOt7xaBoILRf2p4XB_loXRWQnNCOAAceWT6ScUSbBg9Q-dRS__hUrsvQeRTvY0pTPG1VG2iOH3NjHfLmNbSAusbdxURW-43DPt0XnWodciOp0HTsOkSvmhBXq6B2_bWFM1PmHnPfm3lugIMoToFwiND0JHpG9DmComhJAjz-bUMjKOv5j4pfouQiPEGUJwNI3O-9wH0tjRHLsy-By0)
 ```
 
-Замените `Текст ссылки` текстом, который хотите использовать для ссылки. Вместо `URL` вставьте адрес, на который должна вести ссылка. Например:
-
-```markdown
-[Посетите Яндекс](https://ya.ru/)
-```
 
 # Задание 2. Проектирование микросервисной архитектуры
+
+Изменения в контексте в целевой версии:
+- режим самообслуживания по модели SaaS (модель подписки, оплата)
+- для пользователя: настройка сценария работы устройства
+- контекст: подключение к экосистеме устройств партнёров по стандартным протоколам
 
 В этом задании вам нужно предоставить только диаграммы в модели C4. Мы не просим вас отдельно описывать получившиеся микросервисы и то, как вы определили взаимодействия между компонентами To-Be системы. Если вы правильно подготовите диаграммы C4, они и так это покажут.
 
 **Диаграмма контейнеров (Containers)**
 
-Добавьте диаграмму.
+C4 — Уровень контейнеров (Containers). Создайте диаграмму, показывающую основные контейнеры (приложения, базы данных, очереди сообщений) и их взаимодействие.
+
+Диаграмма контейнеров уровня C4 не должна показывать отдельные контроллеры и компоненты. Этот уровень в модели C4 фокусируется на крупных единицах развертывания: Web-приложения, мобильные приложения, бд, внешние сервисы/API, брокеры и тд. Он не детализирует внутреннюю структуру этих контейнеров и не отображает контроллеры или классы. Контроллеры, сервисы и внутренние детали реализации отображаются на диаграммах компонентов
+
+```markdown
+[Диаграмма контейнеров](//www.plantuml.com/plantuml/png/jLVBRXit5DthArYl7C2LDbrrbSGkq4SSk362B0rAOfsffU60ej8OHG4_QZk1KXij2dJH8aLQ55qL6BjM_B0a_mBvHpsNd956ev4JmUZ2dY67FEVmtij3wcvBSwNRpKP91xeXs1Ekcf_ATaiiob2Bvvej1NnTyMQff6N4j6HLgRLiidgWH4q7CYoLFWZ2MgDT5stLO4-rZbeVLogAVrDU3_JJTXLGgaPOeIxNPBFoAAXnLPSF0n69HcNnemzN6ZpKZvSVL9gyfOL2rzgYR4Oof1aHAIkj2DMIuJn1BR2vntZCuMb-DmDpPL-PCpnFJ6ntJ9VQp6wRSxljcZtROUOFl5pZIyTSCFCp1lVcxgIOlDuCGW9xWo5Tks_EJMok_7o6hW7-sItCEKN_MnDZxaoZPnBJQaUHLFfcWe4v1kQLtGN1EQtRzF7zy4PPq7EA3rkOScdEqLKKEVnTl9_SrKragZa_h1NVXe1XZyyF2C-1Em1jbrIQxeBdFWChAJYoX_ObldMPtNMHY_61kdUGHZE0Z06nfxCHJbBVGo_Qz9KOt62lc9PFAEZQjLjsjmon9Qfa7eH2hTsNxR3ErUPDofdlchl3lYqnDfmx_qHKxqKHHkA55IsDblmvVyONs6gaWd3TXU1No3imVH--Iopl64Fx4BbJd0IilGnqIcfIp7WzDJsQvHD3nAx4qimVqIApIfTbDMW8BzRyXf74IKHzl7V1EwcTuH6pUs5ToQ2UBcIunqwX_0gPEiWEXm3RiNj8d5U5ZWjwCoTvFOjI2TgpBQS7yozfjDrsgJgXLJ7tkJn6_EUe7bBQgI6Z-1IGBebdGKqGhNzZoppaww89OtadrUIoCA2OPbc6WPQKSe2D6cCKRymn5IkLhzrpPFqX5M2xH4MHOUGSQ1nGWnQPuxklv8PGOunVyAys78aZ-j59lgJOqbuUEBjucN1T09xYDHFb2j-aYAqAHJ7qDN6LnFvjKjhPP9ACXx8kob-tdABNvZeP7wTUT4tZG9QFvXBNlCfRmsf9suIp8bjwNOdLBnyurByeYDu545J8-DwPGGz4-sI7gHjFb2y9xjrGISMIabhwNqNbQevaJPMJhO3RAw8AI5LCs2lU_pKnT7nNIen_xPFdUfv70GZkhNmsMJz4_9DpkHUkpBlC3wC0Ju6V02asz0wy9IV2xsal9NzwvKyGUtIpjkmXbCuOmwJC5A0ow0N4WBPLJY6kKBxbtEyVMjmOO5pWD7FlFvJo5zijlFPze7BqLHvkJDcoBwZ-p9bt3Sg_3xpVcBJCwwbpYAJqI3II6rdcmCaV637vJA6P0cA4u0_Nd1VR8pzvc-BWokKelGOi55m24a1_eKi02-LaJw_fDo4Fbrx9He2ldVnk5Yncw1cGSAUqysxK12rdhUILnsxrnwx6Be4CY3X59Z3FvylFRui4CeT5YIy6pARLAyfA6XtMXPCdB8GyF3_VU-Kj4BBsDYE8hyLRAXa58NiY4SpV53XVXHNp2wN6RT1N6GkrUmbALa3k69aHAHUIoKDW1hmYm8bRHVhRQfSCsL_6pwZmq4mjBs_ONYevSZ4SkLEN9iq4butXoEnX4yuHOh-J4ubsFzbb9z1zEEKNGG5kng8drprsJRK_v4tPTW1uLuHrzplrFm00)
+```
 
 **Диаграмма компонентов (Components)**
 
+C4 — Уровень компонентов (Components). Детализируйте взаимодействие внутри выбранных микросервисов, выделив ключевые компоненты и их ответственности. Например, для микросервиса «Управление устройствами» можно выделить такие компоненты: API, обработчик команд, менеджер состояния устройств.
+
 Добавьте диаграмму для каждого из выделенных микросервисов.
+```markdown
+[Микросервис Users](//www.plantuml.com/plantuml/png/hLHVJpj557tVJp7k4oJOllZa4r0UZ062D8H7CjsEPPBTdStiBAOn9b15OpJWcoOQqHZZAsWBXVxfLvZvHfwxT0kxQKty_NuFqBrtxZtdp9qpivaQhaqMXPwH9XJicEle8vMbWZMK5aUfq2dRau5MJQ7FP43fA56nY0tRaRoZUUHvHYNCADPIngY8jQKMWP4gzhptP1o4MLjaEcIdnYJfX_Mwvf_LEjASPYsGw4351bYrG4NrGnbmtLRxKYGYh3S-UFyWvB4vsjkjHpmrGYDric2l9QJPQw2VorZeassLnMskkskB7JIxw8escB_8iEUKlyu-znXRzAuTYzPMag0I7ypUk7Cxj2CxjVTsO2Vu7lXO-vYVyGtMJBICEnJRd-tGVMCdxZlxoEoJlRLtTeZoWUinEqFto7rl7_3xjxrrFJj0V5q3EWfHHAiCdtqxfYv0NRWU4UClRw4S6lprajB5eP20Nz3vHFNk0gpdw08AovThInN_OMSekqNXgDZPIgcagqA-mmrlyNGXe8W9-q2bfgD5yvFTdEbFuY466WRsvxwoKwJ6mFyQoQkSzfcxRv_0TuLHaYGQv_W_H06D0U2IqRnemNtfBa0rXjOlFEyTJAfmH-6qjQtCd1AkLc4eDAhBYTMJ1IE2FjAOPOqjBI9H528v9H-DQIBFzd1NEFsI4X9SKaA9YfARwaY9PWLvQOQJ9G9M70J-7glQ3dWtmcz9NZbNAFpLtkLAxkmKSBWun3AQOzyJTWLwNndvgGmuFIe0U1tcW3-z-AjqVrRRUmd9_7tRvTrS-ZnaUKmisraANwKf2rL71fNcGv6eL1gbkqN_I-O5WkuBuq7m6WMUFHHXyG9LhERR7t0qf7Y2_qDi4ZQUNw5hkWbqdbZ1rh7oKAm0zXLcnJI-_Gru_nGFJj6pP53p1-jtnBFvLEb9x2zC1PwSgAAwD4c_mSCmPQtgzAYFbBr9NwcmP0vu0Tkw90kxQ_Sjb0umfjNsc0CMFdrRBLKR-FOlrol6LRS_WdP6WwUdluyWV-xSPJ77QZihFRZ_1srJnEqi2ly5)
+```
+
+```markdown
+[Микросервис Devices](//www.plantuml.com/plantuml/png/dLNFR-D45BxxhnXoIgKbkN3YjAL50jIYqcYrnsfYZzAHR8yrdYnR8QGbm09AsKfSE83W08WJaXlLItyawRymyn_nFS-cSRokL26rzipBlFTzxyTyVfmRhiquYGCZJIpOKwwJZzGu5sn7QV4a5pfd-pBKQY3qCncIESbKAbB3TYKVQPu4WL4PCueDbJ4gOP7K8ZHIfK7mZap3U1o9iOxPiJ5P_dw_h_ddlP4qn-CXG7IeKeDOlL0b_KCPSXsfJwN8HDpVUU_TWvYdvid-NZ_XkH4QfgCxz5v6d8CT-7EP2dtqWHgd4TSdtRiC1YVmIXwnpZedR-fiiIy2nkvykq_5S3lBS18BPdztB-oblR5B-zgMTe5rsS5ld_1d_14RP5gc8zhRN-ob-yuktDHUCNjj2tkEemjRkWcpj_2-SQVsNxndjd0JMs9_raDqMz0X-fLXUM7dv8LGNxa90UE_SY4R73fR6qptrL36mfErl-8aOHBG0kiIk6zpPtWLR3kDj9BHAX5wWyeI-DVmVuL4QiT1m4tTjynzxLd1S4KhEmCVnZOOqPZi2XgD737zYktpb8z4WZwrLkwFYcU1D6zMi2rOjg3QD0gmomqVyhm6kR9Gv0ELcv4MWy_sAfo_28NYeoLKPVUDNS8qHqDUmlYgwXCzcdMWfiuRb3mXqFao2FmS7Ntut7Hv9dss0Dm--9ZXODLBn9cxAGFW1FwtgqpTMSNifsfGlgSdSYS_CC200BDP6nZhCObCIrHcPnHYYGCbcbHdA9uRlyi9-Hyakjm8MBJKllFmerI_mht0ab82TO8F_lU0-Ckvbfckz_0EcYBKznr_3qh2HlglYG6LQqdSy3pprMcVv0qOh1AUHWTQWMYk2AbXyc2_sVEgF-VK0upBfRrcL2Sxf_e0xiBVaNhiGNWied4SL_pNcrRoa8p2tX9VqfGg5o1EtGH8LtvW2H_sMseCGT8eDzDv8zTx_CI3-YsZVKiURw3SoufCGIA2rUmU7SF_LHFlK6GgbqRfanNash96fRlAU4ZbPB4QoT1Vf-1Gn3Lfs-nukqwr2mR28PJNysQSTjdnmrj9JKdHlEWm_3MdY2x0VQ0LwYRSHWCwEpoESuPFdaphkSEjFXmFzwaVR8ufCltJwzpcrmJP-a7rO-gcQyrf9jK6q-WmKFwcSV2H-_PdM_Y9TASKbo0Mz15PLQVftXJoXuUZQ6_bl9PXYAkR-e4bOMrJh6vTPTqPnkg7IeUnNSBpmfQheqHcgtSVQ4rP_PJU00oI0BXJcX-ImnabmToFJIrrKwhCOv56uoJ-3m00)
+```
+
+```markdown
+[Микросервис Monitoring](//www.plantuml.com/plantuml/png/dLLDRzj64BtpLsnrSe34klJKKnodGDFQXMiXoD5OKrjvOP9BB5TfXQA09JVzg8C4xQM75dLJeEXLhik8jcNdByp-eywCA9CoXGBsGH1dkVlUcvatouUPazRruoXmsaLAF9Cs_iZqCoNMZLLFCsKpiQb3QphAFjSXBSUfILJYn6CjUrR6GU1CAfmHkyOv4ukkjYfqsYH1y9vEmgZVLNqRYJtdqko3TjlABrPxsktrTv74XYPnYBKQchYzhKDfk-PJhL8LjTVVVx0LoSGztTnenp9pokBIpZNxQagQWtKyBtMYxCuZqq-wqWvMhZFe3F1KV5-qgfncIwrxugj0YEkpAy_KxbgQuavy473i3w202xY2jv339JxdBNptiNmkxujEQdNIenX-XS9_1vV-2Cu4dCCOJg30xRaV2NY7fo_yIvZW_pymzYF8CNwzYkWmfatqLk3Zlp3bKuKV-X4Huu-Fq1eUQDrRK4fDsJI9TePae8egMAhn3OgwyWS22k5V83J1bZa9PCvdd70kK0Ygn7mm804tU1zPiw_i0lCdylDzIIHCz1FhFeSSoVmG7w_WnFzGSfqHFAP_Ayh7qibTcIscEryapYsJkPvLdSysMC5VPNe5rHzBwh-Xp66A9D_YuYjk2fF29NTjIdAkPYTuA_NX5CQeu-iWc5bbvyCltOfCDHAiRJrfI6RYdxdfttDbSy7RocoNmZT01BjZYlAmUFpgq1_u8sfzSBVEix-hILtfEEbqvdIOuSugOFL_8lSvCbAlScwT7xBWrpERDEIIhZhuMYAZGObz_SpGVo3an1-IrVs8GOu4LHz_5uWseLgmxylo589NqIDpbr8Hc_H2r0MmKPvWO9soI5iFMSOlo7Vg3r38XCQqPW7_WXd5Fbcv2Tm9zrIt7qKCMmKC-jjC96AzPSzJDl0EwpXa3Xw14sGOiVtPUjpS8JvYpgLJNzqiPddBRiW1avQXu9XvVqTKnE6n7Z4LNpiJzk3m0LzRfrohuYRsjafDHfOPpE6hbOg1oYTa6Aei4v7fwN0s3jigcb-JDJUru9WlkaFg3tRf9Nkvz1EPXuMDyMtPpgR1pfOQh4PN-Ql9Lhc92usyNEf5o35C2P8nQzeNIjrQbr6K2VmcwQIUEP-fR53NycP-mLHtzlzhgbcT2i9EAM2wS2NDAUlQRlQj1NzpbNayssnlzXHoi-b-v0wCI589Lut4BU5gar92LHMuCqvJKkFhmaFBJkUQrakKrqQsx6h3sSrFnotLoLGl4tLCeyv3pxAQxbxoIGiUggJRZwF_0000)
+```
 
 **Диаграмма кода (Code)**
 
-Добавьте одну диаграмму или несколько.
+```markdown
+[Диаграмма последовательностей для регистрации нового Клиента](//www.plantuml.com/plantuml/png/bLJRIXn147tlhoZsIM7r0mH5Omm4GiZ598zBJqyhWzepTFSkUVII285W4WWaX208Vi2mSSowwlWBrN-KwXv7PoyXvAalNNLEdLCrismirxQxiyqO5pRLqC8JBDs-stK7U8RNEC0X-0iw57Y9EU2DsyMIZZcUju0RY5YKleNM8vqgEmzlP3JdzkZnmkst6416y8b8CguijEYnoXyGL8ddM0I68k28W2DLNE4zu69h0W1_-e9y0SHHqDh7WTk3LqPg4q3CHCP98uuqzOdpZBYlg8AA_GAUfZRPI0ItIQe2YYAKc5iUSIC9uWj-XMUfiPjQldp-94J4qLsrB8Av9H0BWDymhzmXAeBEWVO5_lBKtb7CtI7jZ_nRIOMKz5G2_g1A1huMCZdtNKXwt4goWmaFR1PWLKj_qoMLC6FJBQdQ87Tuijq67iTQ6jC6FCNlU3nxdsyOIpCBUE8Et0SiV0dOf_qHdRnelA42Bjr7_1sAoUcvy6TO1AkxaW6OMjTd7DBh89YuMqTJP2tBs-WEtS5qicAAp7aMd0iCQW4CdJeYLHk9tg4rbfrUmZj18io4PRQAZICAvZtPqN8pCLQ7bdMC9S7_SAODFgfh5bTVhAsihpriE4MzZACQFOp_-qfLFPxWjvCUqErrtSIgxU_yOBjFOs83-jmIjPB5iidQE9d66FKzhDiZedrecd8t3ppBT3fcGgs-cJ0B8-DGkztZsqbCToEEmrI0-tp5L9L-gzL_IBGEIPwQeaunLdTi_CFeG_YWPhgPB-AsBJHrAwlhZr-l_KzV_ceiCzMz6BLOr0wVOab8LoEj9BpgHqV2GjT4XU6vZ-lh9fvWR9dcblwTVm00)
+```
 
 # Задание 3. Разработка ER-диаграммы
 
-Добавьте сюда ER-диаграмму. Она должна отражать ключевые сущности системы, их атрибуты и тип связей между ними.
+```markdown
+[ER диаграмма микросервиса Devices](//www.plantuml.com/plantuml/png/RP3DIWCn58NtynIXIs5Um5MhBRWP5qNTXfWSo-3a9jpS58RMTpULKJB1pS0ztt1-iarYMBAVkWuaeyngiyTvjDYeIwVKdN8_bnwTkbVFhyF3uLZalY-VXVZWC3MSZ4UvttR7nwVTJSWyhMvZBLBI4Zv15VXgM-ZXvbvtgHFRHjvG_Z1MCeCR3XlId0HUBoPj8yPfB9orCu92zhkNGv5JZZ6mQ91hoE93sR-3_zGpE8s1gkJbFvaZwhp8GO8Dq__hXsh9x_fsNRlU1XyDpPgCNoSP5W9hSsB0WsILM2TThtqVBgf--gu-LhmuTrkGotxw1W00)
+```
 
 Четвёртое задание — дополнительное. Его можно сделать по желанию. Чтобы ревьюер быстрее проверил ваше решение, укажите, сделали вы это задание или нет. Для этого оставьте нужный эмодзи около заголовка задания:
 
@@ -86,7 +148,7 @@
 
 ❌ — вы пропустили задание.
 
-# ✅ ❌ Задание 4. Создание и документирование API
+# ❌ Задание 4. Создание и документирование API
 
 ### 1. Тип API
 

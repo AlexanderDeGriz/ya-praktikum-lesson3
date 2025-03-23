@@ -1,0 +1,34 @@
+@startuml
+title WarmHouse CoreUsers MicroService Component Diagram
+
+top to bottom direction
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+Container_Boundary(WarmHouseSystem, "WarmHouse System") {
+  Container(WebApp, "Web Приложение", "Java, Spring", "Личный кабинет пользователя. Панель администрирования.")
+  Container(CoreUsers, "Микросервис Users.", "Java, Spring", "Управление пользователями")
+  Container(DatabaseUsers, "Database", "PostgreSQL", "Хранит информацию по подключенным пользователям и их статусам")
+}
+
+Container(CoreUsers, "Микросервис Users.", "Java, Spring") {
+  Component(AuthController, "AuthController", "Управление кредами. Управление ролевой моделью.")
+  Component(UserController, "UserController", "Подключение. Управление статусной моделью пользователей.")
+  Component(PaymentController, "PaymentController", "Обработка платежей")
+  Component(Notification, "Notification", "Информирование пользователей")
+  Component(ServiceLayer, "Service Layer", "Business logic")
+  Component(RepositoryLayer, "Repository Layer", "Data access logic")
+}
+
+Rel(WebApp,AuthController,"Аутентификация и авторизация")
+Rel(WebApp,UserController,"Регистрация пользоватля. Сопровождение.")
+
+Rel(AuthController,ServiceLayer,"Calls business logic")
+Rel(UserController,ServiceLayer,"Calls business logic")
+Rel(ServiceLayer,Notification,"Исходящее информирование")
+Rel(PaymentController,ServiceLayer,"Calls business logic")
+Rel(ServiceLayer,RepositoryLayer,"Чтение/Запись данных")
+
+Rel(RepositoryLayer, DatabaseUsers,"Чтение/Запись данных")
+
+@enduml

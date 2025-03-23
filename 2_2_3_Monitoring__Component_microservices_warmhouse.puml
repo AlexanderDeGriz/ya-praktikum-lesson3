@@ -1,0 +1,39 @@
+@startuml
+title WarmHouse CoreUsers MicroService Component Diagram
+
+top to bottom direction
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+Container_Boundary(WarmHouseSystem, "WarmHouse System") {
+  Container(WebApp, "Web Приложение", "Java, Spring", "Личный кабинет пользователя. Панель администрирования.")
+  Container(CoreMonitoring, "Monitoring", "Java, Spring", "Сбор и хранение метрик датчиков")
+  Container(BrokerMonitoring, "Kafka", "", "Брокер сообщений для метрик датчиков")
+  Container(DatabaseMonitoring, "Database", "PostgreSQL", "Хранит информацию по данным мониторинга")
+}
+
+System_Ext(api, "API датчиков", "Внешнее API для мониторинга датчиков температуры.")
+
+Container(CoreMonitoring, "Monitoring", "Java, Spring") {
+  Component(Statistics, "Statistics", "Текущее состояние датчиков.")
+  Component(Analytics, "Analytics", "Результаты анализа истории изменения датчиков.")  
+  Component(DataImporter, "DataImporter", "Загрузка данных из kafka.")  
+  Component(Scheduller, "Scheduller", "Менеджер запуска событий по расписанию.")
+  Component(ServiceLayer, "Service Layer", "Обработка бизнес-логики.")
+  Component(RepositoryLayer, "Repository Layer", "Data access logic")
+}
+
+Rel(WebApp,Statistics,"Получить текущие значения состояний датчиков.")
+Rel(WebApp,Analytics,"Получить аналитику по датчикам.")
+
+Rel(Statistics,ServiceLayer,"Calls business logic")
+Rel(Scheduller,Analytics,"Сформировать аналитику по историческим данным")
+Rel(ServiceLayer,RepositoryLayer,"Чтение/Запись объектов")
+Rel(DataImporter,RepositoryLayer,"Чтение/Запись данных")
+Rel(Analytics,RepositoryLayer,"Чтение/Запись данных")
+Rel(DataImporter,BrokerMonitoring,"Забрать данные из kafka")
+
+Rel(RepositoryLayer,DatabaseMonitoring,"Чтение/Запись данных")
+Rel(api,BrokerMonitoring,"Передать значения датчиков")
+
+@enduml

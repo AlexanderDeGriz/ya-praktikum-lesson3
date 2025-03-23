@@ -1,0 +1,35 @@
+@startuml
+
+entity "Device" {
+  * device_id : NUMBER
+  --
+  device_model_id : NUMBER
+  name : VARCHAR
+  url : VARCHAR
+  access_token : VARCHAR
+}
+
+entity "Device_Model" {
+  * device_model_id : NUMBER
+  --
+  manufacturer_id : NUMBER
+  ecosystem_device_url : VARCHAR
+  register_date : DATE
+  support_end_date : DATE
+  device_number: DATE
+  version: NUMBER
+  device_type: VARCHAR
+  protocol : VARCHAR
+}
+
+entity "Manufacturer" {
+  * manufacturer_id : NUMBER
+  --
+  company_name: VARCHAR
+  partner_agreement: VARCHAR
+}
+
+Manufacturer||--o{ Device_Model
+Device_Model||--o{ Device
+  
+@enduml

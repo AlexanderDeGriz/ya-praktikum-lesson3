@@ -1,0 +1,21 @@
+@startuml
+title WarmHouseContext Diagram
+
+top to bottom direction
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+Person(user, "User", "Пользователь системы Теплый Дом")
+Person(admin, "Administrator", "Специалист по подключению системы Теплый Дом")
+System(WarmHouseSystem, "WarmHouse", "Приложение, позволяющее управлять отоплением и мониторить температуру.")
+
+System_Ext(api, "API датчиков", "Внешнее API для мониторинга датчиков температуры.")
+System_Ext(apiManage, "API системы отопления", "Внешнее API для управления системой отопления в доме.")
+
+Rel(user, WarmHouseSystem, "Управляет и мониторит")
+Rel(admin,WarmHouseSystem,"Подключает новые домохозяйства")
+Rel(WarmHouseSystem,api,"Получить значения датчиков")
+Rel(WarmHouseSystem,apiManage,"Установить целевую температуру")
+@enduml
+
+//www.plantuml.com/plantuml/png/ZPFFRjD04CRlVegbfoALvCA9Kr500ecYgAZYM6sJLMh9zbhsHfHRcuWM59HAY3i2Ni0gc2HDchx2x1lnZTUkMYT5NBpUsTdVVFDdjrCZ4zCF0y_u9b3YhKp25xgVgfQEZ3eoufalUuaCFS_eM1Wj3hGnEXHTFr4Tu-l8ynxuKIVeTrK_2SIXCN7wfDbCvBj6ppU7_GEWaWwp8jFewB2vwtTaqjMlVHMheDbw_AWToCZixRngXZ8rAe5flwN3M4Ty8sPbNbibgOus6RKbDlQmR62bRxIakVrC4wmNbDa1vRmNzeIczgJOBkn8q0_yNEDaH3D1N-6ys7XOCMKtz2F0dlBgfoQHHZlwTzp9xIbDAQEv0mgObiM7VjCbY6Dx1lOLJiV_5_NDU-GORjvKsUqHxiRYChF7Y3l7fJ-EJ_cMYpj1ffprEM9_mbakx92kuPxXWCq3582MaB7awDLjMWYQ2bh0YZsVSeJ2sIdcP9a2qz0Uss43Oakr-y-FpAQCVQvI-wL0wknr1kmb5xuG_0NOt7xaBoILRf2p4XB_loXRWQnNCOAAceWT6ScUSbBg9Q-dRS__hUrsvQeRTvY0pTPG1VG2iOH3NjHfLmNbSAusbdxURW-43DPt0XnWodciOp0HTsOkSvmhBXq6B2_bWFM1PmHnPfm3lugIMoToFwiND0JHpG9DmComhJAjz-bUMjKOv5j4pfouQiPEGUJwNI3O-9wH0tjRHLsy-By0
