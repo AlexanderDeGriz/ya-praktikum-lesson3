@@ -1,0 +1,39 @@
+@startuml
+title WarmHouse CoreUsers MicroService Component Diagram
+
+top to bottom direction
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+Container_Boundary(WarmHouseSystem, "WarmHouse System") {
+  Container(WebApp, "Web Приложение", "Java, Spring", "Личный кабинет пользователя. Панель администрирования.")
+  Container(MobileApp, "Мобильное приложение на Android", "Java", "Подключение новых устройств.")  
+  Container(CoreDevices, "Device Management", "Java, Spring", "Управление устройствами")
+  Container(DatabaseDevices, "Database", "PostgreSQL", "Хранит информацию по подключенным устройсвам")
+}
+
+System_Ext(apiManage, "API системы отопления", "Внешнее API для управления системой отопления в доме.")
+System_Ext(extSystems, "Экосистема устройств", "Экосистема устройств партнера.")
+
+Container(CoreDevices, "Device Management", "Java, Spring") {
+  Component(DeviceManager, "DeviceManager", "Менеджер состояния устройств.")
+  Component(CommandProcessor, "CommandProcessor", "Обработчик комманд.")  
+  Component(Scheduller, "Scheduller", "Менеджер запуска событий по расписанию.")
+  Component(ServiceLayer, "Service Layer", "Обработка сценариев пользователей.")
+  Component(RepositoryLayer, "Repository Layer", "Data access logic")
+}
+
+
+Rel(MobileApp,DeviceManager,"Подключение устройства")
+Rel(WebApp,DeviceManager,"Управление параметрами и состоянием устройства")
+
+Rel(DeviceManager,ServiceLayer,"Calls business logic")
+Rel(Scheduller,ServiceLayer,"Calls business logic")
+Rel(ServiceLayer,CommandProcessor,"Формирование команды для устройств")
+Rel(ServiceLayer,RepositoryLayer,"Чтение/Запись данных")
+
+Rel(RepositoryLayer,DatabaseDevices,"Чтение/Запись данных")
+Rel(CommandProcessor,apiManage,"Вызов API устройств (управляющее воздействие).")
+Rel(CommandProcessor,extSystems,"Получить сервис экосистемы")
+
+@enduml

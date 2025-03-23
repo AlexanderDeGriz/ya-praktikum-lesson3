@@ -1,0 +1,51 @@
+@startuml
+title WarmHouseContext Diagram
+
+top to bottom direction
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+Person(user, "User", "Пользователь системы Теплый Дом")
+Person(admin, "Специалист по продажам", "Специалист по продажам системы Теплый Дом")
+Person(support, "Специалист по обслуживанию", "Специалист поддержки пользователей системы Теплый Дом")
+System(WarmHouseSystem, "WarmHouse", "Приложение, позволяющее управлять отоплением и мониторить температуру.")
+
+Container_Boundary(WarmHouseSystem, "WarmHouse System") {
+  Container(WebApp, "Web Приложение", "Java, Spring", "Личный кабинет пользователя. Панель администрирования.")
+  Container(MobileApp, "Мобильное приложение на Android", "Java", "Подключение новых устройств.")
+  Container(CoreUsers, "Микросервис Users.", "Java, Spring", "Управление пользователями")
+  Container(CoreDevices, "Device Management", "Java, Spring", "Управление устройствами")
+  Container(CoreMonitoring, "Monitoring", "Java, Spring", "Сбор и хранение метрик датчиков")
+  Container(BrokerMonitoring, "Kafka", "", "Брокер сообщений для метрик датчиков")
+  Container(PaymentService, "Платежный сервис", "Node.js", "Оплата подписки")
+  Container(DatabaseUsers, "Database", "PostgreSQL", "Хранит информацию по подключенным пользователям")
+  Container(DatabaseDevices, "Database", "PostgreSQL", "Хранит информацию по подключенным устройсвам")
+  Container(DatabaseMonitoring, "Database", "PostgreSQL", "Хранит информацию по данным мониторинга")
+}
+
+System_Ext(api, "API датчиков", "Внешнее API для мониторинга датчиков температуры.")
+System_Ext(apiManage, "API системы отопления", "Внешнее API для управления системой отопления в доме.")
+System_Ext(extSystems, "Экосистема устройств", "Экосистема устройств партнера.")
+System_Ext(bank, "Платежный шлюз", "Банковский платежный шлюз.")
+
+Rel(user, MobileApp, "Подключает устройства")
+Rel(user, WebApp, "Управляет состоянием, мониторит")
+Rel(admin,WebApp,"Подключает новых пользователей")
+Rel(support,WebApp,"Отвечает на вопросы пользователей")
+Rel(WebApp,PaymentService,"Обработка запросов на оплату")
+Rel(PaymentService,bank,"Обработка платежей")
+
+Rel(WebApp,CoreUsers,"Обработка информации")
+Rel(WebApp,CoreDevices,"Обработка информации")
+Rel(WebApp,CoreMonitoring,"Обработка информации")
+Rel(MobileApp,CoreDevices,"Обработка информации")
+Rel(CoreUsers,DatabaseUsers,"Чтение/Запись данных")
+Rel(CoreDevices,DatabaseDevices,"Чтение/Запись данных")
+Rel(CoreMonitoring,DatabaseMonitoring,"Чтение/Запись данных")
+
+Rel(CoreMonitoring,BrokerMonitoring,"Получить значения датчиков")
+Rel(api,BrokerMonitoring,"Передать значения датчиков")
+Rel(CoreDevices,apiManage,"Установить целевую температуру")
+Rel(CoreDevices,extSystems,"Получить сервис экосистемы")
+@enduml
+

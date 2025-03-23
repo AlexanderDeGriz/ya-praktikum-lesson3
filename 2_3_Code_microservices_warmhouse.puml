@@ -1,0 +1,54 @@
+@startuml
+
+actor "Сотрудник отдела продаж" as b
+box "Front. Web-сайт"
+  participant "Web приложение" as c
+box end
+box "Back"
+  participant "Микросервис Users" as s
+  participant "Сервис уведомлений Notification" as n
+  database "БД PostgreSQL" as db
+box end
+
+b -> c: Запрос на регистрацию нового Клиента
+activate c
+
+c -> s: Create user (token, email, address, ФИО)
+activate s
+
+opt Существующий пользователь = true
+  s -> c: Активировать страницу Существующего Клиента.
+end
+
+s -> n: send_confirm_code_via_email (email)
+s -> db: save_registration_state (token, email, address, ФИО, status=CREATED)
+activate db
+db -> db: Сохранение нективированного профиля Клиента
+db -->> s
+deactivate db
+deactivate s
+
+b -> c: вносит confirm_code
+c -> s: approve_registration(token, confirm_code) 
+activate s
+
+s -> n: validate_confirm_code (token, confirm_code)
+activate n
+n -> n: проверка
+n -->> s
+deactivate n
+
+
+s -> db: Запрос в БД (update status = ACTIVE)
+activate db
+db -> db: Сохранение
+db -->> s
+deactivate db
+
+s -->> c
+deactivate s
+c -> c: Формирование ответа
+c -->> b: Ответ
+deactivate c
+
+@enduml
